@@ -8,10 +8,10 @@ n2 = 1.5
 d1 = 0.1
 d2 = 0.005
 dL = 0.001
-d4 = 0.5
+d4 = 0.1
 l = d1+d2+dL+d4
 
-offset = 0 #offset to the right
+offset = 0 #offset to the right - ignore this
 
 
 
@@ -117,7 +117,7 @@ r = [0,0,0]
 def plot1():
     phi_0, phi_1 = -np.pi/4, np.pi/4
     theta_0, theta_1 = np.pi/4, 3*np.pi/4
-    nphi, ntheta = 300,300
+    nphi, ntheta = 1000,1000
     rawimage = np.zeros((nphi,ntheta))
     evaluatedimage = rawimage
     for cc in range(ntheta):
