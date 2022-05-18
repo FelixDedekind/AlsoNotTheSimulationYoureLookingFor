@@ -57,21 +57,24 @@ def linearPropagation(r, v, d):
 
 
 def refract(v, alpha, n1, n2):
+    totalReflection = False
     v = v/vAbs(v)
-    n = (np.sin(alpha), -np.cos(alpha),0)
-    v2 = (0,0,0)
-    testScalar = v[0]/n[0]
-    if(testScalar*n[1]==v[1] and testScalar*n[2] == v[2]):
+    n = (-np.cos(alpha),np.sin(alpha),0)
+    #testScalar = v[0]/n[0]
+    if(vAbs(vAdd(v,n))<0.01):
         v2 = v
     else:
         e1, e2 = n, sMult(vAdd(v, sMult(n,-iProd(n,v))),-1)
-        e2 = e2/vAbs(e2)
+        e2 = sMult(e2,1/vAbs(e2))
         omega1, omega2 = (iProd(v,e1))/(vAbs(v)*vAbs(e1)), 0
-        if(True): #Enter domain-breaking processes here
+        if(abs(n1/n2*np.sin(omega1))<=1):
             omega2 = np.arcsin(n1/n2*np.sin(omega1))
-        vprime = (-np.cos(omega2),-np.sin(omega2))
+            vprime = (-np.cos(omega2), -np.sin(omega2))
+        else:
+            vprime = (-v[0], v[1])
+            totalReflection = True
         v2 = changeBasis(vprime, [e1,e2], euclideanBasis3D)
-    return v2
+    return totalReflection, v2
 
 def crossWithCircle(r, v, dL, offset):
     deltax,deltay =0,0
@@ -94,11 +97,11 @@ def crossWithCircle(r, v, dL, offset):
 
 def raytrace(r,v,n1,n2):
     r2 = linearPropagation(r, v, d1/iProd(v,[1,0,0]))
-    v2 = refract(v,0,n1,n2)
+    v2 = refract(v,0,n1,n2)[1]
     r3 = linearPropagation(r2, v2, d2/iProd(v2,[1,0,0]))
     radial = crossWithCircle(r3, v2, dL, offset)
     r4 = linearPropagation(r3, v2, radial[0])
-    v3 = refract(v2,np.arctan(radial[1]/radial[0]),n2,n1)
+    v3 = refract(v2,np.pi/2-np.arctan(radial[1]/radial[0]),n2,n1)[1]
     r5 = linearPropagation(r4,v3,l-r4[0])
     return r5
 
@@ -109,23 +112,23 @@ def evaluate(r):
         return 0
 
 
-v = [np.cos(np.pi/6), np.sin(np.pi/6), 0]
-r = [0,0,0]
+
 #raytrace(r,v,n1,n2)
 
 
 def plot1():
     phi_0, phi_1 = -np.pi/4, np.pi/4
     theta_0, theta_1 = np.pi/4, 3*np.pi/4
-    nphi, ntheta = 1000,1000
+    nphi, ntheta = 300,300
     rawimage = np.zeros((nphi,ntheta))
     evaluatedimage = rawimage
     for cc in range(ntheta):
         print(int(cc/nphi*100), '%')
         for dd in range(nphi):
-            phi = cc / nphi * (phi_1 - phi_0) + phi_0
+            phi = dd / nphi * (phi_1 - phi_0) + phi_0
             theta = cc / ntheta * (theta_1 - theta_0) + theta_0
             v_0 = [np.sin(theta)*np.cos(phi), np.sin(theta)*np.sin(phi), np.cos(theta)]
+            v_0 = sMult(v_0, 1/iProd(v_0,v_0))
             rawimage[dd,cc] = raytrace([0,0,0],v_0, n1, n2)[2]
             evaluatedimage[dd,cc] = evaluate(raytrace([0,0,0],v_0, n1, n2))
     return evaluatedimage
@@ -133,4 +136,6 @@ def plot1():
 
 
 plt.imshow(plot1())
+plt.xlabel('phi')
+plt.ylabel('theta')
 plt.show()
