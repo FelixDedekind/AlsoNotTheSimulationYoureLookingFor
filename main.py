@@ -55,7 +55,6 @@ def linearPropagation(r, v, d):
 
 
 def refract(v, alpha, n1, n2):
-    print(n1,n2)
     v = sMult(v,1/vAbs(v))
     n = (-np.cos(alpha), np.sin(alpha), 0)
     if(vAbs(vAdd(v,n)) < 0.00001):        #perpendicular to surface
@@ -68,10 +67,8 @@ def refract(v, alpha, n1, n2):
         if(abs(n1/n2 * np.sin(omega1)) > 1):
             v2 = (0,0,0)
         else:
-            print('now')
-            omega2 = np.arcsin(-n1/n2 * np.sin(omega1))
+            omega2 = np.arcsin(n1/n2 * np.sin(omega1))
             v2 = vAdd(sMult(e1,-np.cos(omega2)), sMult(e2, -np.sin(omega2)))
-            print(v2)
     return v2
 
 def crossWithCircle(r, v, dL, offset):
@@ -103,20 +100,17 @@ def raytrace(r0,v0,n1,n2):
     v1 = refract(v0, 0, n1, n2)
 
     l2 = d1/iProd(v1, (1,0,0))
-    r2 = linearPropagation(r1,v1,l2)
-    #l2 = d2/iProd(v1, (1,0,0))
-    #r2 = linearPropagation(r1, v1, l2)
+    r2 = linearPropagation(r1, v1, l2)
 
-    #circleCrossing = crossWithCircle(r2, v1, dL, 0)
-    #l3 = circleCrossing[1]
-    #r3 = linearPropagation(r2, v1, l3)
+    circleCrossing = crossWithCircle(r2, v1, dL, 0)
+    l3 = circleCrossing[1]
+    r3 = linearPropagation(r2, v1, l3)
 
-    #v2 = refract(v1, np.arctan(circleCrossing[1]/circleCrossing[0]), n2, n1)
+    v2 = refract(v1, np.arctan(circleCrossing[1]/circleCrossing[0]), n2, n1)
 
-    #l4 = l - r3[0]
-    #r4 = linearPropagation(r3, v2, l4)
-    #return r4
-    return r2
+    l4 = l - r3[0]
+    r4 = linearPropagation(r3, v2, l4)
+    return r4
 
 
 #evaluation and plotting
@@ -139,14 +133,11 @@ def plot1():
         for dd in range(nphi):
             phi = dd / nphi * (phi_1 - phi_0) + phi_0
             v_0 = [np.sin(theta)*np.cos(phi), np.sin(theta)*np.sin(phi), np.cos(theta)]
-            rawimage[dd,cc] = raytrace([0,0,0],v_0, n1, n2)[1]
-            evaluatedimage[dd,cc] = evaluate(raytrace([0,0,0],v_0, n1, n2))
+            rawimage[dd,cc] = raytrace((0,0,0),v_0, n1, n2)[1]
+            evaluatedimage[dd,cc] = evaluate(raytrace((0,0,0),v_0, n1, n2))
     return rawimage
 
-#plt.imshow(plot1())
-#plt.xlabel('phi')
-#plt.ylabel('theta')
-#plt.show()
-
-
-print(raytrace((0,0,0), (1/np.sqrt(2),1/np.sqrt(2),0), n1,n2))
+plt.imshow(plot1())
+plt.xlabel('phi')
+plt.ylabel('theta')
+plt.show()
