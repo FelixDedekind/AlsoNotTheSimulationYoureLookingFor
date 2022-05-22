@@ -57,7 +57,7 @@ def linearPropagation(r, v, d):
 def refract(v, alpha, n1, n2):
     v = sMult(v,1/vAbs(v))
     n = (-np.cos(alpha), np.sin(alpha), 0)
-    if(iProd(v,n) < 0.0001):        #perpendicular to surface
+    if(vAbs(vAdd(v,n)) < 0.0001):        #perpendicular to surface
         v2 = v
     else:
         e1 = n
@@ -103,7 +103,6 @@ def raytrace(r0,v0,n1,n2):
     r2 = linearPropagation(r1, v1, l2)
 
     circleCrossing = crossWithCircle(r2, v1, dL, 0)
-    print(circleCrossing)
     l3 = circleCrossing[1]
     r3 = linearPropagation(r2, v1, l3)
 
@@ -125,7 +124,7 @@ def evaluate(r):
 def plot1():
     phi_0, phi_1 = -np.pi/4, np.pi/4
     theta_0, theta_1 = np.pi/4, 3*np.pi/4
-    nphi, ntheta = 100,100
+    nphi, ntheta = 300,300
     rawimage = np.zeros((nphi,ntheta))
     evaluatedimage = rawimage
     for cc in range(ntheta):
