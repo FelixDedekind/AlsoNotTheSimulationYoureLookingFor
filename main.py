@@ -46,8 +46,6 @@ def changeBasis(v1, B1, B2):  # ORTHONORMAL!
             v2[cc] += v1[dd] * iProd(B1[dd], B2[cc])
     return v2
 
-def matMult2x2_2x1(mat, vec):
-    return [mat[0, 0] * vec[0] + mat[0, 1] * vec[1], mat[1, 0] * vec[0] + mat[1, 1] * vec[1]]
 
 
 # Propagation Functions
@@ -57,27 +55,23 @@ def linearPropagation(r, v, d):
 
 
 def refract(v, alpha, n1, n2):
-    totalReflection = False
-    v = v/vAbs(v)
-    n = (-np.cos(alpha),np.sin(alpha),0)
-    #testScalar = v[0]/n[0]
-    if(vAbs(vAdd(v,n))<0.01):
+    v = sMult(v,1/vAbs(v))
+    n = (-np.cos(alpha), np.sin(alpha), 0)
+    if(iProd(v,n) < 0.0001):        #perpendicular to surface
         v2 = v
     else:
-        e1, e2 = n, sMult(vAdd(v, sMult(n,-iProd(n,v))),-1)
-        e2 = sMult(e2,1/vAbs(e2))
-        omega1, omega2 = (iProd(v,e1))/(vAbs(v)*vAbs(e1)), 0
-        if(abs(n1/n2*np.sin(omega1))<=1):
-            omega2 = np.arcsin(n1/n2*np.sin(omega1))
-            vprime = (-np.cos(omega2), -np.sin(omega2))
+        e1 = n
+        e2 = sMult(vAdd(v, sMult(e1,-iProd(v,e1))),-1)
+        e2 = sMult(e2, 1/vAbs(e2))
+        omega1 = np.arccos(iProd(v,e1)/(vAbs(v)*vAbs(e1)))
+        if(abs(n1/n2 * np.sin(omega1)) > 1):
+            v2 = (0,0,0)
         else:
-            vprime = (-v[0], v[1])
-            totalReflection = True
-        v2 = changeBasis(vprime, [e1,e2], euclideanBasis3D)
-    return totalReflection, v2
+            omega2 = np.arcsin(-n1/n2 * np.sin(omega1))
+            v2 = vAdd(sMult(e1,-np.cos(omega2)), sMult(e1, -np.sin(omega2)))
+    return v2
 
 def crossWithCircle(r, v, dL, offset):
-    deltax,deltay =0,0
     y0 = (r[1] - offset) % dL
     if(v[1]==0):
         deltay = 0
@@ -91,49 +85,58 @@ def crossWithCircle(r, v, dL, offset):
             deltax, deltay = x1, y1
         else:
             deltax, deltay = x2, y2
-    return [deltax,deltay]
+    return deltax,deltay
 
 
 
-def raytrace(r,v,n1,n2):
-    r2 = linearPropagation(r, v, d1/iProd(v,[1,0,0]))
-    v2 = refract(v,0,n1,n2)[1]
-    r3 = linearPropagation(r2, v2, d2/iProd(v2,[1,0,0]))
-    radial = crossWithCircle(r3, v2, dL, offset)
-    r4 = linearPropagation(r3, v2, radial[0])
-    v3 = refract(v2,np.pi/2-np.arctan(radial[1]/radial[0]),n2,n1)[1]
-    r5 = linearPropagation(r4,v3,l-r4[0])
-    return r5
+#raytracing
+
+def raytrace(r0,v0,n1,n2):
+    v0 = sMult(v0, 1/vAbs(v0))
+
+    l1 = d1/iProd(v0, (1,0,0))      #this distance is incorrect for a tilted lense
+    r1 = linearPropagation(r0, v0, l1)
+
+    v1 = refract(v0, 0, n1, n2)
+
+    l2 = d2/iProd(v1, (1,0,0))
+    r2 = linearPropagation(r1, v1, l2)
+
+    circleCrossing = crossWithCircle(r2, v1, dL, 0)
+    print(circleCrossing)
+    l3 = circleCrossing[1]
+    r3 = linearPropagation(r2, v1, l3)
+
+    v2 = refract(v1, np.arctan(circleCrossing[1]/circleCrossing[0]), n2, n1)
+
+    l4 = l - r3[0]
+    r4 = linearPropagation(r3, v2, l4)
+    return r4
+
+
+#evaluation and plotting
 
 def evaluate(r):
-    if(r[1]<0.01 and r[1]>-0.01):
+    if(abs(r[1])<0.1):
         return 1
     else:
         return 0
 
-
-
-#raytrace(r,v,n1,n2)
-
-
 def plot1():
     phi_0, phi_1 = -np.pi/4, np.pi/4
     theta_0, theta_1 = np.pi/4, 3*np.pi/4
-    nphi, ntheta = 300,300
+    nphi, ntheta = 100,100
     rawimage = np.zeros((nphi,ntheta))
     evaluatedimage = rawimage
     for cc in range(ntheta):
-        print(int(cc/nphi*100), '%')
+        print(int(cc/ntheta*100), '%')
+        theta = cc / ntheta * (theta_1 - theta_0) + theta_0
         for dd in range(nphi):
             phi = dd / nphi * (phi_1 - phi_0) + phi_0
-            theta = cc / ntheta * (theta_1 - theta_0) + theta_0
             v_0 = [np.sin(theta)*np.cos(phi), np.sin(theta)*np.sin(phi), np.cos(theta)]
-            v_0 = sMult(v_0, 1/iProd(v_0,v_0))
             rawimage[dd,cc] = raytrace([0,0,0],v_0, n1, n2)[2]
             evaluatedimage[dd,cc] = evaluate(raytrace([0,0,0],v_0, n1, n2))
     return evaluatedimage
-
-
 
 plt.imshow(plot1())
 plt.xlabel('phi')
