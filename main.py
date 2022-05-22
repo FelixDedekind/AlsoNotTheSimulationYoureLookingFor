@@ -8,7 +8,7 @@ n2 = 1.5
 
 d1 = 0.1
 d2 = 0.005
-dL = 0.001
+dL = 0.01
 d4 = 0.1
 l = d1+d2+dL+d4
 
@@ -102,6 +102,28 @@ def crossWithCircle(r, v, dL, offset):
             deltay = y2
     return deltay, deltax
 
+def crossWithTriangle(r, v, dL, dS): #does not work properly
+    x0 = (r[1] - offset) % (2 * dL) - dL
+    if(v[1]==0):
+        if(x0 < 0):
+            deltax = 0
+            deltay = dS+x0*(dS/dL)
+        else:
+            deltax = 0
+            deltay = dS - x0 * (dS / dL)
+    else:
+        k = v[0]/v[1]
+        d = k*x0
+        xs = (dS-d)/k
+        ks = dS/dL
+        if(xs < 0):
+            deltax = (dS-d)/(k-ks)
+            deltay = ks*deltax + dS
+        else:
+            deltax = (dS-d)/(k+ks)
+            deltay = -ks*deltax + dS
+    return deltay, deltax
+
 
 
 #raytracing
@@ -116,6 +138,7 @@ def raytrace(r0,v0,n1,n2):
     l2 = d2/iProd(v1, (1,0,0))
     r2 = linearPropagation(r1, v1, l2)
     circleCrossing = crossWithCircle(r2, v1, dL, 0)
+    #circleCrossing = crossWithTriangle(r2, v1, dL, dL)
     l3 = circleCrossing[0]
     r3 = linearPropagation(r2, v1, l3)
 
@@ -152,7 +175,7 @@ def plot1():
     return rawimage
 
 def plot2():
-    ny, nz = 5000, 100
+    ny, nz = 500, 300
     yspace = np.linspace(-5,5,ny)
     zspace = np.linspace(-2, 2, nz)
     evaluatedimage = np.zeros((nz,ny))
@@ -171,45 +194,5 @@ plt.xlabel('y')
 plt.ylabel('z')
 plt.show()
 
-def plot3():
-    yspace = np.linspace(-2,2,1000)
-    evaluatedimage = np.zeros(1000)
-    rawimage = evaluatedimage
-    for yy in range(len(yspace)):
-        print(round(yy/len(yspace)*100), ' %')
-        v0 = (1, yspace[yy], 0)
-        v0 = sMult(v0, 1/vAbs(v0))
-        rawimage[yy] = raytrace((0,0,0), v0, n1, n2)[1]
-        evaluatedimage[yy] = evaluate(raytrace((0, 0, 0), v0, n1, n2))
-    return rawimage
 
-#plt.plot(plot3())
-#plt.show()
 
-# print(raytrace((0,0,0), (1/np.sqrt(2),1/np.sqrt(2),0), n1,n2))
-#
-# origin = (0,0,0)
-# initvec = (1/np.sqrt(2),1/np.sqrt(2),0.05)
-# initvec /= np.sqrt(np.dot(initvec,initvec))
-# #initvec = (1,0,0)
-#
-# print(raytrace(origin, initvec, n1,n2))
-# #print(  np.tan(np.arcsin(np.sin(np.pi/4)/1.5))  *0.1 )
-#
-# zList = list(np.linspace(0,0.2,10))
-# outvecX,outvecY,outvecZ=[],[],[]
-#
-# for z in zList:
-#     initvec = (1 / np.sqrt(2), 1 / np.sqrt(2), z)
-#     initvec /= np.sqrt(np.dot(initvec, initvec))
-#     outvecX.append( raytrace(origin, initvec, n1,n2)[0] )
-#     outvecY.append(raytrace(origin, initvec, n1, n2)[1])
-#     outvecZ.append(raytrace(origin, initvec, n1, n2)[2])
-#
-# print(outvecX)
-# print(outvecY)
-# print(outvecZ)
-
-#plt.plot(zList, outvecX)
-#plt.plot(zList, outvecZ)
-#plt.show()
