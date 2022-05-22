@@ -69,7 +69,7 @@ def refract(v, alpha, n1, n2):
             v2 = (0,0,0)
         else:
             print('now')
-            omega2 = np.arcsin(-n1/n2 * np.sin(omega1))
+            omega2 = np.arcsin(n1/n2 * np.sin(omega1))
             v2 = vAdd(sMult(e1,-np.cos(omega2)), sMult(e2, -np.sin(omega2)))
             print(v2)
     return v2
