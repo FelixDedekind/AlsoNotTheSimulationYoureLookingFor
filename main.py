@@ -3,13 +3,12 @@ import numpy as np
 
 
 #Experimental Setup
-global n1, n2
 n1 = 1
 n2 = 1.5
 
 d1 = 0.1
 d2 = 0.005
-dL = 0.01
+dL = 0.001
 d4 = 0.1
 l = d1+d2+dL+d4
 
@@ -69,7 +68,7 @@ def refract(v, alpha, n1, n2):
         if(abs(n1/n2 * np.sin(omega1)) > 1):
             v2 = (1,0,0)
         else:
-            omega2 = np.arcsin(np.abs(n1/n2 * np.sin(omega1)))
+            omega2 = np.arcsin(n1/n2 * np.sin(omega1))
             v2 = vAdd(sMult(e1,-np.cos(omega2)), sMult(e2, -np.sin(omega2)))
     return v2
 
@@ -95,7 +94,7 @@ def crossWithCircle(r, v, dL, offset):
         x2 = -1/(1+k**2)*(k*d-np.sqrt((k**2+1)*dL**2-d**2))
         y1 = np.sqrt(dL**2 - x1**2)
         y2 = np.sqrt(dL**2 - x2**2)
-        if(y1 >= 0):
+        if(k > 0 and x1-x0 > 0):
             deltax = x1
             deltay = y1
         else:
@@ -153,9 +152,10 @@ def plot1():
     return rawimage
 
 def plot2():
-    yspace = np.linspace(-2,2,1000)
-    zspace = np.linspace(-0.25, 0.25, 100)
-    evaluatedimage = np.zeros((100,1000))
+    ny, nz = 5000, 100
+    yspace = np.linspace(-5,5,ny)
+    zspace = np.linspace(-2, 2, nz)
+    evaluatedimage = np.zeros((nz,ny))
     rawimage = evaluatedimage
     for yy in range(len(yspace)):
         print(round(yy/len(yspace)*100), ' %')
@@ -177,7 +177,6 @@ def plot3():
     rawimage = evaluatedimage
     for yy in range(len(yspace)):
         print(round(yy/len(yspace)*100), ' %')
-
         v0 = (1, yspace[yy], 0)
         v0 = sMult(v0, 1/vAbs(v0))
         rawimage[yy] = raytrace((0,0,0), v0, n1, n2)[1]
