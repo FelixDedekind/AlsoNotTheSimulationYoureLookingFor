@@ -66,7 +66,7 @@ def refract(v, alpha, n1, n2):
         e2 = sMult(e2, 1/vAbs(e2))
         omega1 = np.arccos(iProd(v,e1)/(vAbs(v)*vAbs(e1)))
         if(abs(n1/n2 * np.sin(omega1)) > 1):
-            v2 = (1,0,0)
+            v2 = (0,0,0)
         else:
             omega2 = np.arcsin(n1/n2 * np.sin(omega1))
             v2 = vAdd(sMult(e1,-np.cos(omega2)), sMult(e2, -np.sin(omega2)))
@@ -159,39 +159,43 @@ def evaluate(r):
 
 def plot1():
 
-    phi_0, phi_1 = -np.pi/4, np.pi/4
+    phi_0, phi_1 = -np.pi/3, np.pi/3
     theta_0, theta_1 = np.pi/4, 3*np.pi/4
     nphi, ntheta = 1000,100
     rawimage = np.zeros((ntheta,nphi))
-    evaluatedimage = rawimage
+    evaluatedimage = np.zeros((ntheta,nphi))
     for cc in range(ntheta):
         print(int(cc/ntheta*100), '%')
         theta = cc / ntheta * (theta_1 - theta_0) + theta_0
         for dd in range(nphi):
             phi = dd / nphi * (phi_1 - phi_0) + phi_0
             v_0 = (np.sin(theta)*np.cos(phi), np.sin(theta)*np.sin(phi), np.cos(theta))
-            rawimage[cc,dd] = raytrace((0,0,0),v_0, n1, n2)[1]
+            rawimage[cc,dd] = abs(raytrace((0,0,0),v_0, n1, n2)[1])
             evaluatedimage[cc,dd] = evaluate(raytrace((0,0,0),v_0, n1, n2))
     return rawimage
 
 def plot2():
-    ny, nz = 500, 300
-    yspace = np.linspace(-5,5,ny)
+    ny, nz = 200, 100
+    yspace = np.linspace(-10,10,ny)
     zspace = np.linspace(-2, 2, nz)
     evaluatedimage = np.zeros((nz,ny))
-    rawimage = evaluatedimage
+    rawimage = np.zeros((nz,ny))
     for yy in range(len(yspace)):
         print(round(yy/len(yspace)*100), ' %')
         for zz in range(len(zspace)):
             v0 = (1, yspace[yy], zspace[zz])
             v0 = sMult(v0, 1/vAbs(v0))
-            rawimage[zz,yy] = raytrace((0,0,0), v0, n1, n2)[2]
+            rawimage[zz,yy] = raytrace((0,0,0), v0, n1, n2)[1]
             evaluatedimage[zz, yy] = evaluate(raytrace((0, 0, 0), v0, n1, n2))
     return evaluatedimage
 
-plt.imshow(plot2(), cmap='gray')
-plt.xlabel('y')
-plt.ylabel('z')
+rspace = plot1()
+print(rspace)
+
+plt.imshow(rspace, cmap='gray')
+#plt.contourf(rspace)
+plt.xlabel('phi')
+plt.ylabel('theta')
 plt.show()
 
 
