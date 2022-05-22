@@ -57,7 +57,6 @@ def linearPropagation(r, v, d):
 
 
 def refract(v, alpha, n1, n2):
-    print(n1,n2)
     v = sMult(v,1/vAbs(v))
     n = (-np.cos(alpha), np.sin(alpha), 0)
     if(vAbs(vAdd(v,n)) < 0.00001):        #perpendicular to surface
@@ -66,6 +65,7 @@ def refract(v, alpha, n1, n2):
         e1 = n
         e2 = sMult(vAdd(v, sMult(e1,-iProd(v,e1))),-1)
         e2 = sMult(e2, 1/vAbs(e2))
+        print(e1,e2)
         omega1 = np.arccos(iProd(v,e1)/(vAbs(v)*vAbs(e1)))
         if(abs(n1/n2 * np.sin(omega1)) > 1):
             v2 = (0,0,0)
@@ -77,7 +77,6 @@ def refract(v, alpha, n1, n2):
     return v2
 
 def refract_kaysquared(v, alpha, n1, n2):
-    print(f'refract: {n1/n2}')
     v = sMult(v, 1 / vAbs(v))
     n = (-np.cos(alpha), np.sin(alpha), 0)
     t1a = np.cross(sMult(n,-1),v)
@@ -88,41 +87,52 @@ def refract_kaysquared(v, alpha, n1, n2):
     return vAdd(t1, sMult(t2,-1))
 
 def crossWithCircle(r, v, dL, offset):
-    x = (r[1] - offset) % (2*dL) - dL
+    x0 = (r[1] - offset) % (2*dL) - dL
     if(v[1]==0):
-
+        deltax = x0
+        deltay = np.sqrt(dL**2-x0**2)
     else:
-
-    return
+        k = v[0]/v[1]
+        d = k*x0
+        x1 = -1/(1+k**2)*(1+np.sqrt((1+k**2)*dL**2-d**2))
+        x2 = -1/(1+k**2)*(1-np.sqrt((1+k**2)*dL**2-d**2))
+        y1 = np.sqrt(dL**2 - x1**2)
+        y2 = np.sqrt(dL**2 - x2**2)
+        if(y1 >= 0):
+            deltax = x1
+            deltay = y1
+        else:
+            deltax = x2
+            deltay = y2
+    return deltay, deltax
 
 
 
 #raytracing
 
 def raytrace(r0,v0,n1,n2):
-    print(f'raytrace: {n1,n2}')
+    print('r0, v0; ',r0,v0)
     v0 = sMult(v0, 1/vAbs(v0))
 
     l1 = d1/iProd(v0, (1,0,0))      #this distance is incorrect for a tilted lense
     r1 = linearPropagation(r0, v0, l1)
-
     v1 = refract_kaysquared(v0, 0, n1, n2)
+    print('r1, v1; ', r1, v1)
 
-    l2 = d1/iProd(v1, (1,0,0))
-    r2 = linearPropagation(r1,v1,l2)
-    #l2 = d2/iProd(v1, (1,0,0))
-    #r2 = linearPropagation(r1, v1, l2)
+    l2 = d2/iProd(v1, (1,0,0))
+    r2 = linearPropagation(r1, v1, l2)
+    print('r2: ', r2)
+    circleCrossing = crossWithCircle(r2, v1, dL, 0)
+    l3 = circleCrossing[0]
+    r3 = linearPropagation(r2, v1, l3)
+    print('r3: ', r3)
 
-    #circleCrossing = crossWithCircle(r2, v1, dL, 0)
-    #l3 = circleCrossing[1]
-    #r3 = linearPropagation(r2, v1, l3)
-
-    #v2 = refract(v1, np.arctan(circleCrossing[1]/circleCrossing[0]), n2, n1)
-
-    #l4 = l - r3[0]
-    #r4 = linearPropagation(r3, v2, l4)
-    #return r4
-    return r2
+    v2 = refract_kaysquared(v1, np.pi/2 - np.arctan(circleCrossing[1]/circleCrossing[0]), n2, n1)
+    print('v2: ', v2)
+    l4 = l - r3[0]
+    r4 = linearPropagation(r3, v2, l4)
+    print('r4: ', r4)
+    return r4
 
 
 #evaluation and plotting
@@ -144,40 +154,40 @@ def plot1():
         theta = cc / ntheta * (theta_1 - theta_0) + theta_0
         for dd in range(nphi):
             phi = dd / nphi * (phi_1 - phi_0) + phi_0
-            v_0 = [np.sin(theta)*np.cos(phi), np.sin(theta)*np.sin(phi), np.cos(theta)]
-            rawimage[dd,cc] = raytrace([0,0,0],v_0, n1, n2)[1]
-            evaluatedimage[dd,cc] = evaluate(raytrace([0,0,0],v_0, n1, n2))
-    return rawimage
+            v_0 = (np.sin(theta)*np.cos(phi), np.sin(theta)*np.sin(phi), np.cos(theta))
+            rawimage[dd,cc] = raytrace((0,0,0),v_0, n1, n2)[1]
+            evaluatedimage[dd,cc] = evaluate(raytrace((0,0,0),v_0, n1, n2))
+    return evaluatedimage
 
-#plt.imshow(plot1())
-#plt.xlabel('phi')
-#plt.ylabel('theta')
-#plt.show()
+plt.imshow(plot1())
+plt.xlabel('phi')
+plt.ylabel('theta')
+plt.show()
 
 
-print(raytrace((0,0,0), (1/np.sqrt(2),1/np.sqrt(2),0), n1,n2))
-
-origin = (0,0,0)
-initvec = (1/np.sqrt(2),1/np.sqrt(2),0.05)
-initvec /= np.sqrt(np.dot(initvec,initvec))
-#initvec = (1,0,0)
-
-print(raytrace(origin, initvec, n1,n2))
-#print(  np.tan(np.arcsin(np.sin(np.pi/4)/1.5))  *0.1 )
-
-zList = list(np.linspace(0,0.2,10))
-outvecX,outvecY,outvecZ=[],[],[]
-
-for z in zList:
-    initvec = (1 / np.sqrt(2), 1 / np.sqrt(2), z)
-    initvec /= np.sqrt(np.dot(initvec, initvec))
-    outvecX.append( raytrace(origin, initvec, n1,n2)[0] )
-    outvecY.append(raytrace(origin, initvec, n1, n2)[1])
-    outvecZ.append(raytrace(origin, initvec, n1, n2)[2])
-
-print(outvecX)
-print(outvecY)
-print(outvecZ)
+# print(raytrace((0,0,0), (1/np.sqrt(2),1/np.sqrt(2),0), n1,n2))
+#
+# origin = (0,0,0)
+# initvec = (1/np.sqrt(2),1/np.sqrt(2),0.05)
+# initvec /= np.sqrt(np.dot(initvec,initvec))
+# #initvec = (1,0,0)
+#
+# print(raytrace(origin, initvec, n1,n2))
+# #print(  np.tan(np.arcsin(np.sin(np.pi/4)/1.5))  *0.1 )
+#
+# zList = list(np.linspace(0,0.2,10))
+# outvecX,outvecY,outvecZ=[],[],[]
+#
+# for z in zList:
+#     initvec = (1 / np.sqrt(2), 1 / np.sqrt(2), z)
+#     initvec /= np.sqrt(np.dot(initvec, initvec))
+#     outvecX.append( raytrace(origin, initvec, n1,n2)[0] )
+#     outvecY.append(raytrace(origin, initvec, n1, n2)[1])
+#     outvecZ.append(raytrace(origin, initvec, n1, n2)[2])
+#
+# print(outvecX)
+# print(outvecY)
+# print(outvecZ)
 
 #plt.plot(zList, outvecX)
 #plt.plot(zList, outvecZ)
