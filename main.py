@@ -9,7 +9,7 @@ n2 = 1.5
 
 d1 = 0.1
 d2 = 0.005
-dL = 0.001
+dL = 0.01
 d4 = 0.1
 l = d1+d2+dL+d4
 
@@ -65,15 +65,12 @@ def refract(v, alpha, n1, n2):
         e1 = n
         e2 = sMult(vAdd(v, sMult(e1,-iProd(v,e1))),-1)
         e2 = sMult(e2, 1/vAbs(e2))
-        print(e1,e2)
         omega1 = np.arccos(iProd(v,e1)/(vAbs(v)*vAbs(e1)))
         if(abs(n1/n2 * np.sin(omega1)) > 1):
-            v2 = (0,0,0)
+            v2 = (1,0,0)
         else:
-            print('now')
             omega2 = np.arcsin(np.abs(n1/n2 * np.sin(omega1)))
             v2 = vAdd(sMult(e1,-np.cos(omega2)), sMult(e2, -np.sin(omega2)))
-            print(v2)
     return v2
 
 def refract_kaysquared(v, alpha, n1, n2):
@@ -92,10 +89,10 @@ def crossWithCircle(r, v, dL, offset):
         deltax = x0
         deltay = np.sqrt(dL**2-x0**2)
     else:
-        k = v[0]/v[1]
+        k = -v[0]/v[1]
         d = k*x0
-        x1 = -1/(1+k**2)*(1+np.sqrt((1+k**2)*dL**2-d**2))
-        x2 = -1/(1+k**2)*(1-np.sqrt((1+k**2)*dL**2-d**2))
+        x1 = -1/(1+k**2)*(k*d+np.sqrt((k**2+1)*dL**2-d**2))
+        x2 = -1/(1+k**2)*(k*d-np.sqrt((k**2+1)*dL**2-d**2))
         y1 = np.sqrt(dL**2 - x1**2)
         y2 = np.sqrt(dL**2 - x2**2)
         if(y1 >= 0):
@@ -111,27 +108,22 @@ def crossWithCircle(r, v, dL, offset):
 #raytracing
 
 def raytrace(r0,v0,n1,n2):
-    print('r0, v0; ',r0,v0)
     v0 = sMult(v0, 1/vAbs(v0))
 
     l1 = d1/iProd(v0, (1,0,0))      #this distance is incorrect for a tilted lense
     r1 = linearPropagation(r0, v0, l1)
-    v1 = refract_kaysquared(v0, 0, n1, n2)
-    print('r1, v1; ', r1, v1)
+    v1 = refract(v0, 0, n1, n2)
 
     l2 = d2/iProd(v1, (1,0,0))
     r2 = linearPropagation(r1, v1, l2)
-    print('r2: ', r2)
     circleCrossing = crossWithCircle(r2, v1, dL, 0)
     l3 = circleCrossing[0]
     r3 = linearPropagation(r2, v1, l3)
-    print('r3: ', r3)
 
-    v2 = refract_kaysquared(v1, np.pi/2 - np.arctan(circleCrossing[1]/circleCrossing[0]), n2, n1)
-    print('v2: ', v2)
+    alpha = np.pi/2 - np.arctan(circleCrossing[0]/circleCrossing[1])
+    v2 = refract(v1, alpha, n2, n1)
     l4 = l - r3[0]
     r4 = linearPropagation(r3, v2, l4)
-    print('r4: ', r4)
     return r4
 
 
@@ -144,10 +136,11 @@ def evaluate(r):
         return 0
 
 def plot1():
+
     phi_0, phi_1 = -np.pi/4, np.pi/4
     theta_0, theta_1 = np.pi/4, 3*np.pi/4
-    nphi, ntheta = 300,300
-    rawimage = np.zeros((nphi,ntheta))
+    nphi, ntheta = 1000,100
+    rawimage = np.zeros((ntheta,nphi))
     evaluatedimage = rawimage
     for cc in range(ntheta):
         print(int(cc/ntheta*100), '%')
@@ -155,15 +148,44 @@ def plot1():
         for dd in range(nphi):
             phi = dd / nphi * (phi_1 - phi_0) + phi_0
             v_0 = (np.sin(theta)*np.cos(phi), np.sin(theta)*np.sin(phi), np.cos(theta))
-            rawimage[dd,cc] = raytrace((0,0,0),v_0, n1, n2)[1]
-            evaluatedimage[dd,cc] = evaluate(raytrace((0,0,0),v_0, n1, n2))
+            rawimage[cc,dd] = raytrace((0,0,0),v_0, n1, n2)[1]
+            evaluatedimage[cc,dd] = evaluate(raytrace((0,0,0),v_0, n1, n2))
+    return rawimage
+
+def plot2():
+    yspace = np.linspace(-2,2,1000)
+    zspace = np.linspace(-0.25, 0.25, 100)
+    evaluatedimage = np.zeros((100,1000))
+    rawimage = evaluatedimage
+    for yy in range(len(yspace)):
+        print(round(yy/len(yspace)*100), ' %')
+        for zz in range(len(zspace)):
+            v0 = (1, yspace[yy], zspace[zz])
+            v0 = sMult(v0, 1/vAbs(v0))
+            rawimage[zz,yy] = raytrace((0,0,0), v0, n1, n2)[2]
+            evaluatedimage[zz, yy] = evaluate(raytrace((0, 0, 0), v0, n1, n2))
     return evaluatedimage
 
-plt.imshow(plot1())
-plt.xlabel('phi')
-plt.ylabel('theta')
+plt.imshow(plot2(), cmap='gray')
+plt.xlabel('y')
+plt.ylabel('z')
 plt.show()
 
+def plot3():
+    yspace = np.linspace(-2,2,1000)
+    evaluatedimage = np.zeros(1000)
+    rawimage = evaluatedimage
+    for yy in range(len(yspace)):
+        print(round(yy/len(yspace)*100), ' %')
+
+        v0 = (1, yspace[yy], 0)
+        v0 = sMult(v0, 1/vAbs(v0))
+        rawimage[yy] = raytrace((0,0,0), v0, n1, n2)[1]
+        evaluatedimage[yy] = evaluate(raytrace((0, 0, 0), v0, n1, n2))
+    return rawimage
+
+#plt.plot(plot3())
+#plt.show()
 
 # print(raytrace((0,0,0), (1/np.sqrt(2),1/np.sqrt(2),0), n1,n2))
 #
