@@ -1,7 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 #Experimental Setup
+global n1, n2
 n1 = 1
 n2 = 1.5
 
@@ -69,38 +71,42 @@ def refract(v, alpha, n1, n2):
             v2 = (0,0,0)
         else:
             print('now')
-            omega2 = np.arcsin(n1/n2 * np.sin(omega1))
+            omega2 = np.arcsin(np.abs(n1/n2 * np.sin(omega1)))
             v2 = vAdd(sMult(e1,-np.cos(omega2)), sMult(e2, -np.sin(omega2)))
             print(v2)
     return v2
 
+def refract_kaysquared(v, alpha, n1, n2):
+    print(f'refract: {n1/n2}')
+    v = sMult(v, 1 / vAbs(v))
+    n = (-np.cos(alpha), np.sin(alpha), 0)
+    t1a = np.cross(sMult(n,-1),v)
+    t1b = np.cross(n,t1a)
+    t1 = sMult(t1b,n1/n2)
+
+    t2 = sMult(n,np.sqrt(1-(n1/n2)**2*iProd(np.cross(n,v),np.cross(n,v))))
+    return vAdd(t1, sMult(t2,-1))
+
 def crossWithCircle(r, v, dL, offset):
-    y0 = (r[1] - offset) % dL
+    x = (r[1] - offset) % (2*dL) - dL
     if(v[1]==0):
-        deltay = 0
-        deltax = np.sqrt(dL**2-y0**2)
+
     else:
-        k = v[0]/v[1]
-        x0 = -k*y0
-        y1,y2 = (-2*k*x0+np.sqrt(4*k**2*x0**2-4*(k**2+1)*(x0**2-dL**2)))/(2*(k**2+1)), (-2*k*x0-np.sqrt(4*k**2*x0**2-4*(k**2+1)*(x0**2-dL**2)))/(2*(k**2+1))
-        x1,x2 = np.sqrt(dL**2-y1**2), np.sqrt(dL**2-y2**2)
-        if(y1 >= 0):
-            deltax, deltay = x1, y1
-        else:
-            deltax, deltay = x2, y2
-    return deltax,deltay
+
+    return
 
 
 
 #raytracing
 
 def raytrace(r0,v0,n1,n2):
+    print(f'raytrace: {n1,n2}')
     v0 = sMult(v0, 1/vAbs(v0))
 
     l1 = d1/iProd(v0, (1,0,0))      #this distance is incorrect for a tilted lense
     r1 = linearPropagation(r0, v0, l1)
 
-    v1 = refract(v0, 0, n1, n2)
+    v1 = refract_kaysquared(v0, 0, n1, n2)
 
     l2 = d1/iProd(v1, (1,0,0))
     r2 = linearPropagation(r1,v1,l2)
@@ -150,3 +156,29 @@ def plot1():
 
 
 print(raytrace((0,0,0), (1/np.sqrt(2),1/np.sqrt(2),0), n1,n2))
+
+origin = (0,0,0)
+initvec = (1/np.sqrt(2),1/np.sqrt(2),0.05)
+initvec /= np.sqrt(np.dot(initvec,initvec))
+#initvec = (1,0,0)
+
+print(raytrace(origin, initvec, n1,n2))
+#print(  np.tan(np.arcsin(np.sin(np.pi/4)/1.5))  *0.1 )
+
+zList = list(np.linspace(0,0.2,10))
+outvecX,outvecY,outvecZ=[],[],[]
+
+for z in zList:
+    initvec = (1 / np.sqrt(2), 1 / np.sqrt(2), z)
+    initvec /= np.sqrt(np.dot(initvec, initvec))
+    outvecX.append( raytrace(origin, initvec, n1,n2)[0] )
+    outvecY.append(raytrace(origin, initvec, n1, n2)[1])
+    outvecZ.append(raytrace(origin, initvec, n1, n2)[2])
+
+print(outvecX)
+print(outvecY)
+print(outvecZ)
+
+#plt.plot(zList, outvecX)
+#plt.plot(zList, outvecZ)
+#plt.show()
