@@ -8,8 +8,8 @@ n2 = 1.5
 
 d1 = 0.1
 d2 = 0.005
-dL = 0.01
-d4 = 0.1
+dL = 0.001
+d4 = 0.07
 l = d1+d2+dL+d4
 
 offset = 0 #offset to the right - ignore this
@@ -66,7 +66,7 @@ def refract(v, alpha, n1, n2):
         e2 = sMult(e2, 1/vAbs(e2))
         omega1 = np.arccos(iProd(v,e1)/(vAbs(v)*vAbs(e1)))
         if(abs(n1/n2 * np.sin(omega1)) > 1):
-            v2 = (0,0,0)
+            v2 = (1,100000,0)
         else:
             omega2 = np.arcsin(n1/n2 * np.sin(omega1))
             v2 = vAdd(sMult(e1,-np.cos(omega2)), sMult(e2, -np.sin(omega2)))
@@ -92,9 +92,9 @@ def crossWithCircle(r, v, dL, offset):
         d = k*x0
         x1 = -1/(1+k**2)*(k*d+np.sqrt((k**2+1)*dL**2-d**2))
         x2 = -1/(1+k**2)*(k*d-np.sqrt((k**2+1)*dL**2-d**2))
-        y1 = np.sqrt(dL**2 - x1**2)
-        y2 = np.sqrt(dL**2 - x2**2)
-        if(k > 0 and x1-x0 > 0):
+        y1 = k*x1+d
+        y2 = k*x2+d
+        if(y1<0):              #Where's the mistake?
             deltax = x1
             deltay = y1
         else:
@@ -102,7 +102,27 @@ def crossWithCircle(r, v, dL, offset):
             deltay = y2
     return deltay, deltax
 
-def crossWithTriangle(r, v, dL, dS): #does not work properly
+def crossWithCirclev2(r, v, dL, offset):
+    x0 = (r[1] - offset) % (2*dL) - dL
+    if(v[1]==0):
+        deltax = x0
+        deltay = np.sqrt(dL**2-x0**2)
+    else:
+        k = -v[0]/v[1]
+        d = k*x0
+        x1 = (-(2*k*d)**2 + np.sqrt((2*k*d)**2-4*(1+k**2)*(d**2-dL**2)))/(2*(1+k**2))
+        x2 = (-(2 * k * d) ** 2 - np.sqrt((2 * k * d) ** 2 - 4 * (1 + k ** 2) * (d ** 2 - dL ** 2))) / (2 * (1 + k ** 2))
+        y1 = k*x1 + d
+        y2 = k*x2 + d
+        if(y1>0):
+            deltax = x1
+            deltay = y1
+        else:
+            deltax = x2
+            deltay = y2
+    return deltay, deltax
+
+def crossWithTriangle(r, v, dL, dS): #does not work properly i think
     x0 = (r[1] - offset) % (2 * dL) - dL
     if(v[1]==0):
         if(x0 < 0):
@@ -172,7 +192,7 @@ def plot1():
             v_0 = (np.sin(theta)*np.cos(phi), np.sin(theta)*np.sin(phi), np.cos(theta))
             rawimage[cc,dd] = abs(raytrace((0,0,0),v_0, n1, n2)[1])
             evaluatedimage[cc,dd] = evaluate(raytrace((0,0,0),v_0, n1, n2))
-    return rawimage
+    return evaluatedimage
 
 def plot2():
     ny, nz = 200, 100
